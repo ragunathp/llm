@@ -102,18 +102,27 @@ y = data['ID']
 input_ids, attention_masks = tokenize_text(X['description'].tolist())
 
 # Split data into training and validation sets
-X_train, X_val, y_train, y_val = train_test_split(input_ids, y, test_size=0.1, random_state=42)
+X_train, X_val, y_train, y_val = train_test_split(X, y, test_size=0.1, random_state=42)
+
+# Remove rows with blank values in the 'description' column
+X_train = X_train.dropna(subset=['description'])
+X_val = X_val.dropna(subset=['description'])
+
+# Tokenize input texts
+input_ids_train, attention_masks_train = tokenize_text(X_train['Description'].tolist())
+input_ids_val, attention_masks_val = tokenize_text(X_val['Description'].tolist())
 
 # Convert labels to tensor
-y_train = torch.tensor(y_train.values, dtype=torch.long)
-y_val = torch.tensor(y_val.values, dtype=torch.long)
+y_train = torch.tensor(y_train[X_train.index].values)
+y_val = torch.tensor(y_val[X_val.index].values)
 
 # Prepare DataLoader for training and validation sets
 batch_size = 16
-train_data = TensorDataset(X_train, attention_masks[:len(X_train)], y_train)
+train_data = TensorDataset(input_ids_train, attention_masks_train, y_train)
 train_sampler = DataLoader(train_data, sampler=None, batch_size=batch_size)
-val_data = TensorDataset(X_val, attention_masks[len(X_train):], y_val)
+val_data = TensorDataset(input_ids_val, attention_masks_val, y_val)
 val_sampler = DataLoader(val_data, sampler=None, batch_size=batch_size)
+
 
 
 # Determine device (CPU or GPU)
