@@ -11,9 +11,11 @@ tokenizer = DistilBertTokenizer.from_pretrained(model_name)
 model = DistilBertForSequenceClassification.from_pretrained(model_name)
 
 # Function to tokenize text and prepare input tensors
-def tokenize_text(text_list, max_length=128):
+def tokenize_text(text_list, max_length=None):
     input_ids = []
     attention_masks = []
+
+    max_len = 0  # Track the maximum length of tokenized sequences
 
     for text in text_list:
         encoded_dict = tokenizer.encode_plus(
@@ -25,8 +27,17 @@ def tokenize_text(text_list, max_length=128):
                             return_tensors='pt',
                        )
         
+        # Update max_len if the tokenized sequence length is longer
+        max_len = max(max_len, encoded_dict['input_ids'].size(1))
+
         input_ids.append(encoded_dict['input_ids'])
         attention_masks.append(encoded_dict['attention_mask'])
+    
+    # Pad sequences to the maximum length
+    for i in range(len(input_ids)):
+        padding_length = max_len - input_ids[i].size(1)
+        input_ids[i] = torch.cat([input_ids[i], torch.zeros((1, padding_length), dtype=torch.long)], dim=1)
+        attention_masks[i] = torch.cat([attention_masks[i], torch.zeros((1, padding_length), dtype=torch.long)], dim=1)
     
     input_ids = torch.cat(input_ids, dim=0)
     attention_masks = torch.cat(attention_masks, dim=0)
