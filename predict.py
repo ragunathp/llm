@@ -104,12 +104,17 @@ input_ids, attention_masks = tokenize_text(X['description'].tolist())
 # Split data into training and validation sets
 X_train, X_val, y_train, y_val = train_test_split(input_ids, y, test_size=0.1, random_state=42)
 
+# Convert labels to tensor
+y_train = torch.tensor(y_train.values, dtype=torch.long)
+y_val = torch.tensor(y_val.values, dtype=torch.long)
+
 # Prepare DataLoader for training and validation sets
 batch_size = 16
-train_data = TensorDataset(X_train, attention_masks[:len(X_train)], torch.tensor(y_train.values))
+train_data = TensorDataset(X_train, attention_masks[:len(X_train)], y_train)
 train_sampler = DataLoader(train_data, sampler=None, batch_size=batch_size)
-val_data = TensorDataset(X_val, attention_masks[len(X_train):], torch.tensor(y_val.values))
+val_data = TensorDataset(X_val, attention_masks[len(X_train):], y_val)
 val_sampler = DataLoader(val_data, sampler=None, batch_size=batch_size)
+
 
 # Determine device (CPU or GPU)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
