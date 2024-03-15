@@ -24,7 +24,7 @@ def extract_features(encoded_dict):
     features = last_hidden_state[:, 0, :]
     return features
 
-# Semantic search: Find rows in chunk of data matching input text
+# Semantic search: Find top 5 rows in chunk of data matching input text
 def semantic_search(input_text, chunk):
     # Tokenize input text and extract features
     input_encoded = tokenize_text(input_text)
@@ -38,16 +38,14 @@ def semantic_search(input_text, chunk):
     # Compute cosine similarity between input and description features
     similarity_scores = cosine_similarity(input_features, description_features)
 
-    # Find rows with highest similarity scores
-    max_similarity_index = similarity_scores.argmax()
-    max_similarity = similarity_scores[max_similarity_index][0]
+    # Sort similarity scores in descending order and get indices of top 5 matches
+    top_indices = similarity_scores.argsort(axis=None)[-5:][::-1]
 
-    # Display all columns for the row with highest similarity
-    if max_similarity > 0:
-        matched_row = chunk.iloc[max_similarity_index]
-        return matched_row
-    else:
-        return None
+    # Extract top 5 matching rows and their similarity scores
+    top_matches = [(chunk.iloc[i], similarity_scores.item(i)) for i in top_indices]
+
+    return top_matches
+
 
 # Main function
 def main():
