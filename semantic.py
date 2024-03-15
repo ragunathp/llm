@@ -9,10 +9,10 @@ model_name = 'distilbert-base-uncased'
 tokenizer = DistilBertTokenizer.from_pretrained(model_name)
 model = DistilBertModel.from_pretrained(model_name)
 
-# Load data from Excel file
-def load_data(excel_file):
-    data = pd.read_excel(excel_file)
-    return data
+# Generator function to yield batches of data
+def batch_generator(data, batch_size):
+    for i in range(0, len(data), batch_size):
+        yield data.iloc[i:i+batch_size]
 
 # Tokenize input text using DistilBERT tokenizer
 def tokenize_text(text_list, max_length=128):
@@ -30,48 +30,47 @@ def extract_features(encoded_dict):
     return features
 
 # Semantic search: Find rows in Excel data matching input text
-def semantic_search(input_text, data):
+def semantic_search(input_text, data_batch):
+    matched_rows = []
+
     # Tokenize input text and extract features
     input_encoded = tokenize_text(input_text)
     input_features = extract_features(input_encoded)
 
     # Tokenize and extract features for all descriptions in the dataset
-    descriptions = data['description'].tolist()
+    descriptions = data_batch['description'].tolist()
     description_encoded = tokenize_text(descriptions)
     description_features = extract_features(description_encoded)
 
     # Compute cosine similarity between input and description features
     similarity_scores = cosine_similarity(input_features, description_features)
 
-    # Find rows with highest similarity scores
-    max_similarity_index = similarity_scores.argmax()
-    max_similarity = similarity_scores[max_similarity_index][0]
+    # Find rows with non-zero similarity scores
+    for i, sim_score in enumerate(similarity_scores.flatten()):
+        if sim_score > 0:
+            matched_rows.append(data_batch.iloc[i])
 
-    # Display all columns for the row with highest similarity
-    if max_similarity > 0:
-        matched_row = data.iloc[max_similarity_index]
-        return matched_row
-    else:
-        return None
+    return matched_rows
 
 # Main function
 def main():
-    # Load data from Excel file
+    # Load data from Excel file in chunks
     excel_file = 'your_excel_file.xlsx'
-    data = load_data(excel_file)
+    batch_size = 16
+    for data_batch in batch_generator(pd.read_excel(excel_file, chunksize=batch_size), batch_size):
+        # Input text
+        input_text = "Your input text goes here."
 
-    # Input text
-    input_text = "Your input text goes here."
+        # Perform semantic search on the current batch
+        matched_rows = semantic_search(input_text, data_batch)
 
-    # Perform semantic search
-    matched_row = semantic_search(input_text, data)
-
-    # Display matched row if found
-    if matched_row is not None:
-        print("Match found for input text:")
-        print(matched_row)
-    else:
-        print("No match found for input text.")
+        # Display matched rows if found
+        if matched_rows:
+            print("Match found for input text in current batch:")
+            for row in matched_rows:
+                print(row)
+        else:
+            print("No match found for input text in current batch.")
 
 if __name__ == "__main__":
     main()
