@@ -24,7 +24,6 @@ def extract_features(encoded_dict):
     features = last_hidden_state[:, 0, :]
     return features
 
-# Semantic search: Find top 5 rows in chunk of data matching input text
 def semantic_search(input_text, chunk):
     # Tokenize input text and extract features
     input_encoded = tokenize_text(input_text)
@@ -42,35 +41,44 @@ def semantic_search(input_text, chunk):
     top_indices = similarity_scores.argsort(axis=None)[-5:][::-1]
 
     # Extract top 5 matching rows and their similarity scores
-    top_matches = [(chunk.iloc[i], similarity_scores.item(i)) for i in top_indices]
+    top_matches = [(chunk.iloc[i], similarity_scores[0, i]) for i in top_indices]
 
     return top_matches
 
 
 # Main function
 def main():
-    # Load data from Excel file in chunks
+    # Load data from Excel file
     excel_file = 'your_excel_file.xlsx'
-    chunksize = 1000  # Adjust chunk size as needed
     input_text = "Your input text goes here."
-    found_match = False
+    chunk_size = 1000  # Adjust chunk size as needed
 
-    with pd.ExcelFile(excel_file) as xls:
-        sheet_names = xls.sheet_names
+    total_rows = pd.read_excel(excel_file).shape[0]
+    start_row = 0
 
-        for sheet_name in sheet_names:
-            for chunk in pd.read_excel(xls, sheet_name=sheet_name, chunksize=chunksize):
-                matched_row = semantic_search(input_text, chunk)
-                if matched_row is not None:
-                    found_match = True
-                    print("Match found for input text:")
-                    print(matched_row)
-                    break
-            if found_match:
-                break
+    while start_row < total_rows:
+        chunk = pd.read_excel(excel_file, skiprows=start_row, nrows=chunk_size)
+        matched_rows_with_scores = semantic_search(input_text, chunk)
+        
+        # Print matched rows and their similarity scores
+        if matched_rows_with_scores:
+            for matched_row, similarity_score in matched_rows_with_scores:
+                print("Match found with similarity score:", similarity_score)
+                print(matched_row)
+                print()
+                
+                # Check if similarity score is greater than 90%
+                if similarity_score > 0.9:
+                    break  # Break out of the loop if score is greater than 90%
+                
+            if similarity_score > 0.9:
+                break  # Break out of the outer loop if score is greater than 90%
 
-    if not found_match:
+        start_row += chunk_size
+
+    if not matched_rows_with_scores:
         print("No match found for input text.")
+
 
 if __name__ == "__main__":
     main()
