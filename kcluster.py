@@ -56,12 +56,21 @@ def visualize_clusters(embeddings, labels):
 
 # Predefined keyword clusters with associated keywords
 keyword_clusters = {
-    "Network Issues": ["network", "connection", "latency", "bandwidth"],
-    "Memory Issues": ["memory", "heap", "ram", "out of memory"],
-    "Database Issues": ["database", "sql", "query", "oracle"],
-    "Configuration Errors": ["configuration", "config", "setup"],
-    "Human Errors": ["human error", "manual error"],
-    "Business Continuity": ["bcp", "business continuity", "disaster recovery"]
+    "Network Issues": ["network", "connection", "latency", "bandwidth", "packet loss"],
+    "Memory Issues": ["memory", "heap", "ram", "out of memory", "memory leak"],
+    "Database Issues": ["database", "sql", "query", "oracle", "db2", "mysql", "postgresql"],
+    "Configuration Errors": ["configuration", "config", "setup", "settings"],
+    "Human Errors": ["human error", "manual error", "mistake", "operator error"],
+    "Hardware Failures": ["cpu", "processor", "core", "hardware", "motherboard"],
+    "Storage Issues": ["storage", "disk", "ssd", "hdd", "capacity", "space"],
+    "Firewall Issues": ["firewall", "rule", "access", "port"],
+    "Load Balancer Issues": ["load balancer", "balancing", "lb", "nginx", "haproxy"],
+    "TLS Certificate Issues": ["tls", "ssl", "certificate", "expiry", "renewal"],
+    "Security Breaches": ["breach", "hack", "security", "unauthorized access", "compromise"],
+    "Business Continuity": ["bcp", "business continuity", "disaster recovery", "backup"],
+    "Patching Servers": ["patching", "update", "server update", "security patch"],
+    "Restart Issues": ["restart", "reboot", "boot", "shutdown"],
+    "Failover": ["failover", "redundancy", "backup server", "high availability"],
 }
 
 # Example usage
