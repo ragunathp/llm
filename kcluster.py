@@ -14,15 +14,14 @@ model = DistilBertModel.from_pretrained("distilbert-base-uncased")
 # Function to extract embeddings for text using DistilBert
 def extract_embeddings(text_list):
     inputs = tokenizer(text_list, padding=True, truncation=True, max_length=512, return_tensors='pt')
-    with torch.no-grad():
+    with torch.no_grad():
         outputs = model(**inputs)
     embeddings = outputs.last_hidden_state[:, 0, :]  # CLS token embeddings
     return embeddings
 
 # Function to cluster incidents based on embeddings and map to broader keyword clusters
 def cluster_incidents_by_keywords(incident_texts, embeddings, keyword_clusters):
-    # Apply K-means clustering
-    n_clusters = len(keyword_clusters)
+    n_clusters = len(keyword_clusters)  # Determine the number of clusters
     kmeans = KMeans(n_clusters=n_clusters, random_state=42)
     kmeans.fit(embeddings.numpy())  # K-means expects numpy arrays
     cluster_labels = kmeans.labels_
@@ -35,28 +34,27 @@ def cluster_incidents_by_keywords(incident_texts, embeddings, keyword_clusters):
         text_lower = text.lower()
 
         for cluster_name, keywords in keyword_clusters.items():
-            # Check if any of the keywords in the keyword cluster are present in the text
             if any(keyword in text_lower for keyword in keywords):
                 cluster_mapping[cluster_name].append((text, cluster_label))
                 break
 
-    return cluster_labels, cluster_mapping
+    return cluster_labels, cluster_mapping, n_clusters
 
 # Function to visualize clusters with PCA and a legend
-def visualize_clusters(embeddings, cluster_labels, cluster_mapping):
+def visualize_clusters(embeddings, cluster_labels, cluster_mapping, n_clusters):
     pca = PCA(n_components=2)  # Reduce to 2 dimensions for visualization
     reduced_data = pca.fit_transform(embeddings.numpy())
     
     plt.figure(figsize=(10, 8))
     scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.6)
 
-    # Add a colorbar with cluster numbers
+    # Add a colorbar to represent cluster numbers
     colorbar = plt.colorbar(scatter)
     colorbar.set_label("Cluster Number")
 
     # Add a legend with keyword cluster names
-    unique_clusters = set(cluster_labels)
-    for cluster_label in unique_clusters:
+    for cluster_label in set(cluster_labels):
+        # Find the corresponding keyword cluster name for each cluster number
         cluster_name = next(
             key
             for key, incidents in cluster_mapping.items()
@@ -68,7 +66,7 @@ def visualize_clusters(embeddings, cluster_labels, cluster_mapping):
     plt.xlabel("PCA Component 1")
     plt.ylabel("PCA Component 2")
     
-    # Show the legend with the cluster names
+    # Display the legend with keyword cluster names
     plt.legend(title="Keyword Clusters")
     plt.show()
 
@@ -87,8 +85,8 @@ keyword_clusters = {
     "Security Breaches": ["breach", "hack", "security", "unauthorized access", "compromise"],
     "Business Continuity": ["bcp", "business continuity", "disaster recovery", "backup"],
     "Patching Servers": ["patching", "update", "server update", "security patch"],
-    "Restart Issues": ["restart", "reboot", "boot", "shutdown"],
-    "Failover": ["failover", "redundancy", "high availability"],
+    "Restart Issues": ["restart", "reboot", "shutdown"],
+    "Failover": ["failover", "redundancy", "backup server", "high availability"],
 }
 
 # Read Excel file and extract incident root cause text
@@ -98,12 +96,12 @@ incident_texts = pd.read_excel("your_excel_file.xlsx")["incident_root_cause"].dr
 embeddings = extract_embeddings(incident_texts)
 
 # Cluster incidents based on embeddings and broader keyword clusters
-cluster_labels, cluster_mapping = cluster_incidents_by_keywords(incident_texts, embeddings, keyword_clusters)
+cluster_labels, cluster_mapping, n_clusters = cluster_incidents_by_keywords(incident_texts, embeddings, keyword_clusters)
 
-# Visualize clusters with PCA and the correct legend
-visualize_clusters(embeddings, cluster_labels, cluster_mapping)
+# Visualize the clusters with PCA and legend
+visualize_clusters(embeddings, cluster_labels, cluster_mapping, n_clusters)
 
-# Create a DataFrame to store incidents with clusters and associated keyword clusters
+# Create a DataFrame to store incidents with clusters and keyword cluster mappings
 clustered_list = []
 for cluster_name, incidents in cluster_mapping.items():
     for text, label in incidents:
