@@ -48,28 +48,27 @@ def visualize_clusters(embeddings, cluster_labels, cluster_mapping, n_clusters):
     plt.figure(figsize=(10, 8))
     scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.6)
 
-    # Add a colorbar to represent cluster numbers
-    colorbar = plt.colorbar(scatter)
-    colorbar.set_label("Cluster Number")
-
-    # Add a legend with keyword cluster names
-    for cluster_label in set(cluster_labels):
-        # Find the corresponding keyword cluster name for each cluster number
-        cluster_name = next(
-            key
-            for key, incidents in cluster_mapping.items()
-            if any(item[1] == cluster_label for item in incidents)
-        )
-        plt.scatter([], [], c=plt.cm.viridis(cluster_label / (n_clusters - 1)), label=cluster_name)
-
+    # Add a title and axis labels
     plt.title("PCA Visualization with Keyword Clusters")
     plt.xlabel("PCA Component 1")
     plt.ylabel("PCA Component 2")
     
-    # Display the legend with keyword cluster names
+    # Add a colorbar to represent cluster numbers
+    colorbar = plt.colorbar(scatter)
+    colorbar.set_label("Cluster Number")
+
+    # Add a legend with keyword cluster names, handling potential StopIteration errors
+    unique_clusters = set(cluster_labels)
+    for cluster_label in unique_clusters:
+        cluster_name = next(
+            (key for key, incidents in cluster_mapping.items() if any(item[1] == cluster_label for item in incidents)),
+            "Unknown Cluster"  # Default if there's no matching cluster
+        )
+        plt.scatter([], [], c=plt.cm.viridis(cluster_label / (n_clusters - 1)), label=cluster_name)
+
     plt.legend(title="Keyword Clusters")
     plt.show()
-
+    
 # Predefined keyword clusters with associated keywords
 keyword_clusters = {
     "Network Issues": ["network", "connection", "latency", "bandwidth", "packet loss"],
