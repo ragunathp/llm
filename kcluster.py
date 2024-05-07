@@ -45,23 +45,30 @@ def cluster_incidents_by_keywords(incident_texts, embeddings, keyword_clusters):
     return cluster_labels, cluster_mapping
 
 # Function to visualize clusters with PCA and a legend
-def visualize_clusters(embeddings, labels):
+def visualize_clusters(embeddings, cluster_mapping):
     pca = PCA(n_components=2)  # Reduce to 2 dimensions for visualization
     reduced_data = pca.fit_transform(embeddings.numpy())
     
     plt.figure(figsize=(10, 8))
-    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=labels, cmap='viridis', alpha=0.6)
+    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=cluster_labels, cmap='viridis', alpha=0.6)
 
-    # Add title and labels to the plot
-    plt.title("PCA Visualization of Incident Clusters")
+    # Add a legend with cluster labels from keyword clusters
+    unique_clusters = set(cluster_labels)
+    for cluster_label in unique_clusters:
+        # Find corresponding keyword cluster name for the given cluster number
+        cluster_name = next(
+            key
+            for key, incidents in cluster_mapping.items()
+            if any(item[1] == cluster_label for item in incidents)
+        )
+        plt.scatter([], [], c=plt.cm.viridis(cluster_label / (n_clusters - 1)), label=cluster_name)
+
+    plt.title("PCA Visualization with Keyword Clusters")
     plt.xlabel("PCA Component 1")
     plt.ylabel("PCA Component 2")
     
-    # Add a colorbar with labels representing the cluster numbers
-    colorbar = plt.colorbar(scatter, ticks=range(len(set(labels))))
-    colorbar.set_label("Cluster Number")
-
-    # Show the plot with the legend
+    # Show the legend with the cluster labels
+    plt.legend(title="Keyword Clusters")
     plt.show()
 
 # Predefined keyword clusters with associated keywords
