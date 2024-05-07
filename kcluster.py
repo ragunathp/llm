@@ -4,6 +4,8 @@ from transformers import DistilBertTokenizer, DistilBertModel
 from sklearn.cluster import KMeans
 from collections import defaultdict
 import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.decomposition import PCA
 
 # Load pre-trained DistilBertTokenizer and DistilBertModel
 model_name = 'distilbert-base-uncased'
@@ -42,16 +44,24 @@ def cluster_incidents_by_keywords(incident_texts, embeddings, keyword_clusters):
 
     return cluster_labels, cluster_mapping
 
-# Function to visualize clusters
+# Function to visualize clusters with PCA and a legend
 def visualize_clusters(embeddings, labels):
     pca = PCA(n_components=2)  # Reduce to 2 dimensions for visualization
     reduced_data = pca.fit_transform(embeddings.numpy())
     
     plt.figure(figsize=(10, 8))
-    plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=labels, cmap='viridis', alpha=0.6)
-    plt.title("Cluster Visualization")
-    plt.xlabel("Component 1")
-    plt.ylabel("Component 2")
+    scatter = plt.scatter(reduced_data[:, 0], reduced_data[:, 1], c=labels, cmap='viridis', alpha=0.6)
+
+    # Add title and labels to the plot
+    plt.title("PCA Visualization of Incident Clusters")
+    plt.xlabel("PCA Component 1")
+    plt.ylabel("PCA Component 2")
+    
+    # Add a colorbar with labels representing the cluster numbers
+    colorbar = plt.colorbar(scatter, ticks=range(len(set(labels))))
+    colorbar.set_label("Cluster Number")
+
+    # Show the plot with the legend
     plt.show()
 
 # Predefined keyword clusters with associated keywords
@@ -73,12 +83,8 @@ keyword_clusters = {
     "Failover": ["failover", "redundancy", "backup server", "high availability"],
 }
 
-# Example usage
-excel_file = 'your_excel_file.xlsx'
-column_name = 'incident_root_cause'
-
 # Read the Excel file and extract incident root cause text
-incident_texts = pd.read_excel(excel_file)[column_name].dropna().astype(str).tolist()
+incident_texts = pd.read_excel("your_excel_file.xlsx")[column_name].dropna().astype(str).tolist()
 
 # Extract embeddings using DistilBert
 embeddings = extract_features(incident_texts)
@@ -94,8 +100,6 @@ clustered_list = []
 for cluster_name, incidents in cluster_mapping.items():
     for text, label in incidents:
         clustered_list.append({"Incident": text, "Cluster": label, "Keyword Cluster": cluster_name})
-
-clustered_df = pd.DataFrame(clustered_list)
 
 # Write the clustered incidents to an Excel file
 output_excel_file = 'clustered_incidents_by_keyword_clusters.xlsx'
