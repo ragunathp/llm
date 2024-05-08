@@ -46,26 +46,40 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 
-public class HttpTimeoutExample {
+import java.sql.*;
+
+public class TimeoutExceptionExample {
+
+    private static final String DB_URL = "jdbc:mysql://localhost:3306/mydatabase";
+    private static final String DB_USER = "user";
+    private static final String DB_PASSWORD = "password";
+
     public static void main(String[] args) {
-        HttpClient client = HttpClient.newBuilder()
-                                     .connectTimeout(Duration.ofSeconds(5))
-                                     .build();
+        String query = "SELECT * FROM mytable WHERE column1 = ?";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                                         .uri(URI.create("https://example.com"))
-                                         .timeout(Duration.ofSeconds(5))
-                                         .GET()
-                                         .build();
+        try (
+            Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+            PreparedStatement statement = connection.prepareStatement(query)
+        ) {
+            // Set query timeout to 5 seconds
+            statement.setQueryTimeout(5);
 
-        try {
-            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println("Response received: " + response.body());
-        } catch (Exception e) {
-            System.out.println("Operation timed out: " + e.getMessage());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    System.out.println("Data: " + resultSet.getString("column2"));
+                }
+            }
+
+        } catch (SQLException e) {
+            if ("S1009".equals(e.getSQLState()) || e.getMessage().contains("query timeout")) {
+                System.err.println("Query timed out: " + e.getMessage());
+            } else {
+                System.err.println("SQL Exception: " + e.getMessage());
+            }
         }
     }
 }
+
 In this example, a timeout is applied to the HTTP client and the HTTP request. If the request doesn't complete within 5 seconds, it throws an exception, indicating that the operation timed out.
 
 9. Challenges, Risks, and Mitigations
