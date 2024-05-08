@@ -1,0 +1,138 @@
+The Rate Limiting pattern is a common technique used to control the rate of requests to a system, service, or API to prevent abuse, protect resources, and maintain system stability. Below is a detailed write-up for this pattern, including various sections to cover its aspects comprehensively.
+
+1. Context and Forces
+In distributed systems, high volumes of requests can cause resource exhaustion, degrade system performance, or even lead to denial of service (DoS) attacks. Rate limiting helps manage the number of requests allowed within a specific timeframe, ensuring that a system remains stable and responsive even under heavy load.
+
+2. Pattern Description
+The Rate Limiting pattern restricts the rate at which operations or requests can be performed. This pattern is typically implemented at the API level to limit the number of requests from a single user, client, or IP address over a given period. Rate limiting can also be used to protect shared resources like databases, message queues, or external services.
+
+3. Resiliency Principles
+The key resiliency principles addressed by this pattern are:
+
+Fault Tolerance: By preventing excessive loads, rate limiting helps maintain system stability.
+Resource Protection: It ensures critical resources are not overwhelmed by too many requests.
+Availability: Rate limiting helps ensure the system remains available even during high traffic periods.
+4. Pattern Solution
+The solution involves setting a maximum number of requests that can be made within a specified timeframe, known as the "rate limit." Once the limit is reached, subsequent requests are denied or delayed until the time window resets. This can be implemented using various algorithms, such as:
+
+Fixed Window: Limits requests within a specific time frame (e.g., 100 requests per minute).
+Sliding Window: Tracks requests over a sliding time window, allowing more granularity.
+Token Bucket: Allocates tokens at a fixed rate, with requests requiring a token to proceed.
+Leaky Bucket: Enforces a steady rate by allowing requests to "leak" from a virtual bucket at a controlled rate.
+5. Pattern Variation
+Variations of the Rate Limiting pattern include:
+
+Per-User Rate Limiting: Limits the rate of requests per user or client.
+Per-IP Rate Limiting: Limits requests based on the client's IP address to prevent IP-based abuse.
+Global Rate Limiting: Limits the overall rate of requests across the entire system.
+6. Pattern Applicability and Rationale
+This pattern is applicable when:
+
+The system needs to maintain stability under varying traffic loads.
+There's a risk of resource exhaustion or abuse due to high request volumes.
+It's essential to ensure fair usage among users.
+The rationale for using this pattern is to prevent overloading the system, ensure availability, and protect against abuse or malicious activity.
+
+7. Pattern Validation and Verification
+To validate the pattern:
+
+Test with varying traffic volumes to ensure rate limits are enforced.
+Validate that rate limits reset appropriately after the specified time frame.
+Ensure rate limiting does not adversely impact legitimate users or use cases.
+8. Pattern Implementation Options
+Here's a Java example using a simple rate-limiting approach with a fixed window:
+
+java
+Copy code
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
+
+public class FixedWindowRateLimiter {
+    private final int maxRequests;
+    private final long timeWindowMs;
+    private final Map<String, RateLimitWindow> userRateLimits = new HashMap<>();
+
+    public FixedWindowRateLimiter(int maxRequests, long timeWindowMs) {
+        this.maxRequests = maxRequests;
+        this.timeWindowMs = timeWindowMs;
+    }
+
+    public synchronized boolean allowRequest(String userId) {
+        Instant now = Instant.now();
+        RateLimitWindow window = userRateLimits.getOrDefault(userId, new RateLimitWindow(now, maxRequests));
+
+        if (now.isAfter(window.getEndTime())) {
+            window.reset(now);
+        }
+
+        boolean allowed = window.consumeRequest();
+        userRateLimits.put(userId, window);
+        return allowed;
+    }
+
+    private static class RateLimitWindow {
+        private Instant endTime;
+        private int remainingRequests;
+
+        public RateLimitWindow(Instant startTime, int maxRequests) {
+            this.endTime = startTime.plusMillis(30000); // 30-second window
+            this.remainingRequests = maxRequests;
+        }
+
+        public boolean consumeRequest() {
+            if (remainingRequests > 0) {
+                remainingRequests--;
+                return true;
+            }
+            return false;
+        }
+
+        public void reset(Instant now) {
+            this.endTime = now.plusMillis(30000);
+            this.remainingRequests = 100; // Reset to max requests
+        }
+
+        public Instant getEndTime() {
+            return endTime;
+        }
+    }
+}
+9. Challenges, Risks, and Mitigations
+Challenges and risks with this pattern include:
+
+False Positives: Legitimate users may be restricted due to rate limits.
+Denial of Service: If misconfigured, rate limiting can lead to unintended denial of service.
+Scalability: Tracking rate limits for a large number of users can be resource-intensive.
+Mitigation strategies include:
+
+Ensure rate limits are set at a level that balances protection with usability.
+Implement a mechanism to bypass rate limits for critical services or users with special permissions.
+Use distributed rate-limiting mechanisms to improve scalability.
+10. Resiliency Tiers and Failure Types
+The Rate Limiting pattern addresses failure types such as:
+
+Resource Exhaustion: Prevents overloading resources.
+Denial of Service (DoS): Limits the impact of potential DoS attacks.
+11. Support Patterns
+Support patterns for Rate Limiting include:
+
+Circuit Breaker: Can be used to cut off access when the rate limit is exceeded.
+Bulkhead: Provides additional isolation by segmenting the system into independent parts.
+12. Alternative Patterns
+Alternative patterns to Rate Limiting include:
+
+Queue-Based Rate Control: Instead of rejecting requests, queues them for later processing.
+Priority-Based Rate Limiting: Allows certain high-priority requests to bypass rate limits.
+13. Complementary Patterns
+Complementary patterns that work well with Rate Limiting include:
+
+Logging and Monitoring: Helps track rate limit violations and detect potential abuse.
+Authorization and Authentication: Ensures only authorized users can access the system.
+14. Pattern Test Cases
+To test the Rate Limiting pattern, consider:
+
+Simulated High Load: Test with heavy traffic to ensure rate limits are enforced correctly.
+Rate Limit Reset: Validate that rate limits reset after the specified time frame.
+Multiple Users/Clients: Test with multiple users/clients to ensure proper enforcement without unintended consequences.
+By implementing the Rate Limiting pattern with proper monitoring and validation, you can maintain system stability, prevent resource exhaustion, and protect against abuse, ensuring a resilient and robust system.
