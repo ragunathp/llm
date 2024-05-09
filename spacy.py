@@ -185,19 +185,47 @@ print(f"Extracted negative phrases from incidents have been written to '{output_
 ----------------------------
 import pandas as pd
 import spacy
-import re  # For detecting negative phrases
-import os
+import re
 import openpyxl
+import os
 
 # Load SpaCy's English language model
 nlp = spacy.load("en_core_web_sm")
 
-# Predefined list of common negative words
-negative_words = ["not", "no", "never", "error", "fail", "failure", "problem", "issue"]
+# Comprehensive list of negative words, including all the categories provided
+negative_words = [
+    # General Negative Words for Production
+    "bug", "defect", "flaw", "glitch", "malfunction", "crash", "freeze", "unresponsive", "slow", "bottleneck",
+    "resource leak", "inconsistency", "deadlock", "instability", "outage", "downtime",
+    
+    # Specific Coding Errors
+    "syntax error", "compile error", "runtime error", "unhandled exception", "stack overflow", "memory leak",
+    "segmentation fault", "null pointer", "type mismatch", "array index out of bounds", "division by zero",
+    "race condition", "infinite loop", "timeout", "data corruption", "buffer overflow",
+    
+    # Performance and Stability Issues
+    "high latency", "throughput bottleneck", "resource contention", "memory exhaustion", "CPU overload",
+    "memory fragmentation", "resource deadlock", "infinite recursion", "system crash", "service interruption",
+    
+    # Deployment and Environment Issues
+    "environment mismatch", "incorrect environment variables", "missing dependency", "misconfigured environment",
+    "incompatible library", "dependency conflict", "outdated version", "broken build", "failed deployment",
+    "missing configuration", "deployment rollback",
+    
+    # Security and Authorization Issues
+    "security vulnerability", "privilege escalation", "unauthorized access", "injection attack", "SQL injection",
+    "cross-site scripting", "cross-site request forgery", "insecure code", "insecure storage", "insecure authentication",
+    "insecure authorization",
+    
+    # Software Development Process Issues
+    "unapproved change", "missing unit tests", "broken tests", "untested code", "insufficient testing",
+    "missing documentation", "code smell", "code duplication", "code refactoring required", "code complexity",
+    "code maintainability issue", "technical debt"
+]
 
-# Function to extract negative noun phrases from text
+# Function to extract phrases containing negative words from incident text
 def extract_negative_phrases(text):
-    doc = nlp(text.lower())  # Process the text with SpaCy
+    doc = nlp(text.lower())  # Process text with SpaCy
     
     # Extract noun phrases containing negative words
     negative_phrases = []
@@ -226,7 +254,7 @@ for idx, row in incident_data.iterrows():
     incident_number = row.get("incident_number", "Unknown")
     incident_text = row.get("incident_text", "")
 
-    # Extract negative noun phrases from the incident text
+    # Extract negative phrases from the incident text using SpaCy
     negative_phrases = extract_negative_phrases(incident_text)
 
     if negative_phrases:
