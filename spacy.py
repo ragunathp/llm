@@ -269,3 +269,35 @@ results_df = pd.DataFrame(results)
 results_df.to_excel(output_excel_file, index=False)
 
 print(f"Extracted negative phrases from incidents have been written to '{output_excel_file}'.")
+
+-----------------
+
+# General Negative Words
+fail, failure, error, issue, problem, exception, bug, crash, freeze, unresponsive, slow, bottleneck, resource leak, inconsistency, deadlock, instability, outage, downtime
+
+# Design and Architecture Limitations
+design flaw, architectural limitation, scalability issue, extensibility issue, design bottleneck, architectural bottleneck, architectural deadlock, non-extensible design, complex design, monolithic architecture, limited scalability, rigid architecture
+
+# Communication Issues
+communication failure, packet loss, dropped connection, latency, high latency, timeouts, network congestion, miscommunication, data corruption, network error, protocol mismatch, handshake failure, DNS failure, routing error, IP conflict
+
+# Component Failure
+component failure, hardware failure, overheating, broken part, motherboard failure, sensor failure, capacitor failure, device malfunction, power failure, PSU failure, component degradation, sensor error
+
+# Database Errors
+database error, SQL error, query failure, deadlock, timeout, database crash, data corruption, stale data, failed transaction, connection timeout, incorrect query, data inconsistency, row lock, table lock
+
+# IBM MQ Errors
+MQ error, MQ connection failure, MQ deadlock, MQ bottleneck, queue overflow, queue underflow, message loss, incorrect message order, message corruption, MQ crash, MQ downtime
+
+# Kafka Producer-Consumer Errors
+Kafka error, Kafka failure, broker crash, topic overload, message loss, consumer failure, producer failure, offset inconsistency, message duplication, message backlog, high latency, message reordering, partition imbalance
+
+# Incorrect Procedures and BCP Failovers
+incorrect procedure, incorrect failover, failover failure, failover delay, BCP failure, disaster recovery failure, backup failure, insufficient backup, unapproved procedure, undocumented procedure, improper change management, rollback failure
+
+# Vendor-Hosted Platform Issues
+vendor platform failure, vendor outage, SLA breach, service downtime, platform crash, vendor communication failure, vendor contract breach, vendor security risk
+
+# Performance and Throughput Limitations
+performance bottleneck, throughput limitation, high latency, slow response time, high resource utilization, resource contention, CPU overload, memory overload, high disk usage, low throughput, performance degradation
