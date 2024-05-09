@@ -398,3 +398,80 @@ if positive_texts:
 
 if negative_texts:
     generate_word_cloud(negative_texts, "Negative Word Cloud")
+    
+    ---------------------
+    import pandas as pd
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import openpyxl
+import os
+
+# Set NLTK data path and load necessary resources
+nltk.data.path.append("/your/custom/path")  # Set your custom data path
+nltk.download("punkt", download_dir="/your/custom/path")  # Ensure "punkt" is available
+nltk.download("vader_lexicon", download_dir="/your/custom/path")  # Ensure VADER lexicon is available
+
+# Initialize the sentiment analyzer
+analyzer = SentimentIntensityAnalyzer()
+
+# Read Excel file with incident texts
+excel_file = 'incident_data.xlsx'  # Replace with your Excel file
+incident_data = pd.read_excel(excel_file, engine='openpyxl')
+
+# Output Excel file for sentiment results
+output_excel_file = 'sentiment_analysis_incidents.xlsx'
+
+# Output text file for unique negative words
+output_txt_file = 'unique_negative_words.txt'
+
+# Ensure the Excel output file has the correct structure
+if not os.path.exists(output_excel_file):
+    # Create an empty DataFrame with appropriate columns
+    pd.DataFrame(columns=["Incident Text", "Positive Words", "Negative Words"]).to_excel(output_excel_file, index=False)
+
+# List to collect all unique negative words
+all_negative_words = set()  # Using a set to ensure uniqueness
+
+# Analyze sentiment and tokenize words
+results = []
+for idx, row in incident_data.iterrows():
+    incident_text = row.get("incident_text", "")
+
+    # Tokenize the text into words
+    tokens = word_tokenize(incident_text)  # Should work if "punkt" is loaded
+
+    # Analyze sentiment and extract positive and negative words
+    positive_words = []
+    negative_words = []
+
+    for token in tokens:
+        sentiment_score = analyzer.polarity_scores(token)  # Get sentiment score for each token
+        if sentiment_score['compound'] > 0.05:
+            positive_words.append(token)  # Positive words
+        elif sentiment_score['compound'] < -0.05:
+            negative_words.append(token)  # Negative words
+            all_negative_words.add(token)  # Collect unique negative words
+
+    # Concatenate positive and negative words for Excel output
+    positive_concat = ", ".join(set(positive_words))
+    negative_concat = ", ".join(set(negative_words))
+
+    results.append({
+        "Incident Text": incident_text,
+        "Positive Words": positive_concat,
+        "Negative Words": negative_concat
+    })
+
+# Write the results to the Excel output file
+results_df = pd.DataFrame(results)
+results_df.to_excel(output_excel_file, index=False)
+
+# Write the unique negative words to a text file
+with open(output_txt_file, 'w') as f:
+    unique_negative_words = sorted(all_negative_words)  # Sort the unique negative words
+    f.write('"' + '", "'.join(unique_negative_words) + '"')  # Write with double quotes and comma-separated
+
+print(f"Sentiment analysis results written to '{output_excel_file}'.")
+print(f"Unique negative words written to '{output_txt_file}'.")
+
