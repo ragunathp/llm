@@ -272,32 +272,129 @@ print(f"Extracted negative phrases from incidents have been written to '{output_
 
 -----------------
 
-# General Negative Words
-fail, failure, error, issue, problem, exception, bug, crash, freeze, unresponsive, slow, bottleneck, resource leak, inconsistency, deadlock, instability, outage, downtime
+import pandas as pd
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+import openpyxl
+import os
 
-# Design and Architecture Limitations
-design flaw, architectural limitation, scalability issue, extensibility issue, design bottleneck, architectural bottleneck, architectural deadlock, non-extensible design, complex design, monolithic architecture, limited scalability, rigid architecture
+# Ensure NLTK's VADER sentiment analyzer is available
+nltk.download('vader_lexicon')
 
-# Communication Issues
-communication failure, packet loss, dropped connection, latency, high latency, timeouts, network congestion, miscommunication, data corruption, network error, protocol mismatch, handshake failure, DNS failure, routing error, IP conflict
+# Initialize NLTK's sentiment analyzer
+sentiment_analyzer = SentimentIntensityAnalyzer()
 
-# Component Failure
-component failure, hardware failure, overheating, broken part, motherboard failure, sensor failure, capacitor failure, device malfunction, power failure, PSU failure, component degradation, sensor error
+# Function to extract positive and negative words from text
+def extract_sentiment_words(text):
+    doc = nltk.word_tokenize(text.lower())  # Tokenize the text
+    positive_words = []
+    negative_words = []
+    
+    # Analyze sentiment for each token
+    for token in doc:
+        sentiment_score = sentiment_analyzer.polarity_scores(token)  # Get sentiment score
+        if sentiment_score['compound'] > 0.05:  # Positive threshold
+            positive_words.append(token)  # Add to positive words
+        elif sentiment_score['compound'] < -0.05:  # Negative threshold
+            negative_words.append(token)  # Add to negative words
+    
+    return positive_words, negative_words  # Return both positive and negative words
 
-# Database Errors
-database error, SQL error, query failure, deadlock, timeout, database crash, data corruption, stale data, failed transaction, connection timeout, incorrect query, data inconsistency, row lock, table lock
+# Read Excel file with incident texts
+excel_file = 'incident_data.xlsx'  # Replace with your Excel file
+incident_data = pd.read_excel(excel_file, engine='openpyxl')
 
-# IBM MQ Errors
-MQ error, MQ connection failure, MQ deadlock, MQ bottleneck, queue overflow, queue underflow, message loss, incorrect message order, message corruption, MQ crash, MQ downtime
+# Output Excel file for results
+output_excel_file = 'sentiment_words_from_incidents.xlsx'
 
-# Kafka Producer-Consumer Errors
-Kafka error, Kafka failure, broker crash, topic overload, message loss, consumer failure, producer failure, offset inconsistency, message duplication, message backlog, high latency, message reordering, partition imbalance
+# Ensure the output file has the correct structure
+if not os.path.exists(output_excel_file):
+    # Create an empty DataFrame with appropriate columns
+    pd.DataFrame(columns=["Incident Text", "Positive Words", "Negative Words"]).to_excel(output_excel_file, index=False)
 
-# Incorrect Procedures and BCP Failovers
-incorrect procedure, incorrect failover, failover failure, failover delay, BCP failure, disaster recovery failure, backup failure, insufficient backup, unapproved procedure, undocumented procedure, improper change management, rollback failure
+# Extract positive and negative words from incident texts and write to Excel
+results = []
+for idx, row in incident_data.iterrows():
+    incident_text = row.get("incident_text", "")
 
-# Vendor-Hosted Platform Issues
-vendor platform failure, vendor outage, SLA breach, service downtime, platform crash, vendor communication failure, vendor contract breach, vendor security risk
+    # Extract positive and negative words from the incident text
+    positive_words, negative_words = extract_sentiment_words(incident_text)
 
-# Performance and Throughput Limitations
-performance bottleneck, throughput limitation, high latency, slow response time, high resource utilization, resource contention, CPU overload, memory overload, high disk usage, low throughput, performance degradation
+    # Concatenate the words into a single string
+    positive_concat = ", ".join(set(positive_words))  # Unique positive words
+    negative_concat = ", ".join(set(negative_words))  # Unique negative words
+
+    results.append({
+        "Incident Text": incident_text,
+        "Positive Words": positive_concat,
+        "Negative Words": negative_concat
+    })
+
+# Write the results to the Excel output file
+results_df = pd.DataFrame(results)
+results_df.to_excel(output_excel_file, index=False)
+
+print(f"Sentiment words from incidents have been written to '{output_excel_file}'.")
+------------------
+
+import pandas as pd
+import spacy
+import nltk
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+import os
+
+# Ensure NLTK's VADER sentiment analyzer is available
+nltk.download('vader_lexicon')
+
+# Load SpaCy's English language model
+nlp = spacy.load("en_core_web_sm")
+
+# Initialize NLTK's sentiment analyzer
+sentiment_analyzer = SentimentIntensityAnalyzer()
+
+# Function to analyze sentiment and classify text as positive, neutral, or negative
+def classify_sentiment(text):
+    sentiment_score = sentiment_analyzer.polarity_scores(text.lower())
+    if sentiment_score['compound'] > 0.05:
+        return "positive"
+    elif sentiment_score['compound'] < -0.05:
+        return "negative"
+    else:
+        return "neutral"
+
+# Read Excel file with incident texts
+excel_file = 'incident_data.xlsx'  # Replace with your Excel file
+incident_data = pd.read_excel(excel_file, engine='openpyxl')
+
+# Separate texts into positive and negative based on sentiment
+positive_texts = []
+negative_texts = []
+
+for idx, row in incident_data.iterrows():
+    incident_text = row.get("incident_text", "")
+    sentiment_class = classify_sentiment(incident_text)
+
+    if sentiment_class == "positive":
+        positive_texts.append(incident_text)
+    elif sentiment_class == "negative":
+        negative_texts.append(incident_text)
+
+# Function to generate a word cloud from a list of texts
+def generate_word_cloud(texts, title):
+    combined_texts = " ".join(texts)  # Combine all texts into a single string
+    word_cloud = WordCloud(background_color='white', width=800, height=400).generate(combined_texts)
+
+    plt.figure(figsize=(10, 6))
+    plt.imshow(word_cloud, interpolation='bilinear')
+    plt.axis("off")
+    plt.title(title)
+    plt.show()
+
+# Generate word clouds for positive and negative texts
+if positive_texts:
+    generate_word_cloud(positive_texts, "Positive Word Cloud")
+
+if negative_texts:
+    generate_word_cloud(negative_texts, "Negative Word Cloud")
