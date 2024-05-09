@@ -124,4 +124,61 @@ print(f"Extracted attention words from incidents have been written to '{output_e
 
 --------
 
-https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl
+import pandas as pd
+import spacy
+import re  # For detecting negative phrases
+import os
+import openpyxl
+
+# Load SpaCy's English language model
+nlp = spacy.load("en_core_web_sm")
+
+# Predefined list of common negative words
+negative_words = ["not", "no", "never", "error", "fail", "failure", "problem", "issue"]
+
+# Function to extract negative noun phrases from text
+def extract_negative_phrases(text):
+    doc = nlp(text.lower())  # Process the text with SpaCy
+    
+    # Extract noun phrases containing negative words
+    negative_phrases = []
+    for chunk in doc.noun_chunks:
+        # Check if the noun phrase contains any negative word
+        if any(neg_word in chunk.text for neg_word in negative_words):
+            negative_phrases.append(chunk.text)  # Add the negative noun phrase
+    
+    return negative_phrases
+
+# Read Excel file with incident texts
+excel_file = 'incident_data.xlsx'  # Replace with your Excel file
+incident_data = pd.read_excel(excel_file, engine='openpyxl')
+
+# Output Excel file for results
+output_excel_file = 'negative_phrases_from_incidents.xlsx'
+
+# Ensure the output file has the correct structure
+if not os.path.exists(output_excel_file):
+    # Create an empty DataFrame with appropriate columns
+    pd.DataFrame(columns=["Incident Number", "Incident Text", "Negative Phrases"]).to_excel(output_excel_file, index=False)
+
+# Extract negative phrases from incident texts and write to Excel
+results = []
+for idx, row in incident_data.iterrows():
+    incident_number = row.get("incident_number", "Unknown")
+    incident_text = row.get("incident_text", "")
+
+    # Extract negative noun phrases from the incident text
+    negative_phrases = extract_negative_phrases(incident_text)
+
+    if negative_phrases:
+        results.append({
+            "Incident Number": incident_number,
+            "Incident Text": incident_text,
+            "Negative Phrases": ", ".join(negative_phrases)  # Join all negative phrases
+        })
+
+# Write the results to the Excel output file
+results_df = pd.DataFrame(results)
+results_df.to_excel(output_excel_file, index=False)
+
+print(f"Extracted negative phrases from incidents have been written to '{output_excel_file}'.")
